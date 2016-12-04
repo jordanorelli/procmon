@@ -1,3 +1,1 @@
-#import <AppKit/AppKit.h>
-
-void TheCFunc();
+void MonitorProcesses();

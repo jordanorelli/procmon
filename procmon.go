@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"runtime"
 )
 
 /*
@@ -12,12 +11,42 @@ import (
 */
 import "C"
 
-//export TheGoFunc
-func TheGoFunc(name string) {
-	fmt.Printf("hi from c: %s\n", name)
+var appChanges = make(chan appStateChange, 1)
+
+type stateChange uint
+
+const (
+	stateStarted stateChange = iota
+	stateEnded
+)
+
+type appStateChange struct {
+	stateChange
+	appname string
+}
+
+//export AppStarted
+func AppStarted(name string) {
+	appChanges <- appStateChange{stateStarted, name}
+}
+
+//export AppEnded
+func AppEnded(name string) {
+	appChanges <- appStateChange{stateEnded, name}
+}
+
+func reportChanges() {
+	for change := range appChanges {
+		switch change.stateChange {
+		case stateStarted:
+			fmt.Printf("started: %s\n", change.appname)
+		case stateEnded:
+			fmt.Printf("terminated: %s\n", change.appname)
+		}
+	}
 }
 
 func main() {
-	C.TheCFunc()
-	runtime.Goexit()
+	go reportChanges()
+	C.MonitorProcesses()
 }
