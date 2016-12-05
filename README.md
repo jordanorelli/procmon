@@ -29,7 +29,7 @@ debugging and learning purposes.
 
 ## construction
 
-[`procmon.go`](blob/master/procmon.go) is the single Go file of interest to the
+[`procmon.go`](procmon.go) is the single Go file of interest to the
 Go toolchain.
 
 ### triggering the cgo generation and link step
@@ -60,7 +60,7 @@ The other lines in this comment, that is, the lines that do _not_ begin with
 project, that is just one line: the line that includes `procmon.h`, the header
 file for the C code that we want to access.
 
-Down [in the Go program's `main` function](blob/master/procmon.go#L50), we spawn a goroutine to listen on a
+Down [in the Go program's `main` function](procmon.go#L50), we spawn a goroutine to listen on a
 channel for changes:
 
 ```go
@@ -97,7 +97,7 @@ void MonitorProcesses();
 The cgo toolchain automatically associated `procmon.c` with our header file
 `procmon.h` that we imported in our cgo import comment. [The implementation of
 the `MonitorProcesses` function appears in
-`procmon.c`](blob/3767628a0e24c6bccd463a2616f7f5226d4e1c9c/procmon.c#L5):
+`procmon.c`](procmon.c#L5):
 
 ```obj-c
 void MonitorProcesses() {
@@ -108,7 +108,7 @@ void MonitorProcesses() {
 
 This function does two things: it starts by accessing a singleton of our
 Objective-C class `ProcWatcher` (that's `[ProcWatcher shared]`, which is defined
-[here](blob/3767628a0e24c6bccd463a2616f7f5226d4e1c9c/ProcWatcher.m#L6)) and
+[here](ProcWatcher.m#L6)) and
 invoking its `startWatching` method. This subscribes our `ProcWatcher` instance
 to OS notifications. We'll come back to how the ProcWatcher subscribes to
 events in a bit.
@@ -138,7 +138,7 @@ infrastructure, and it prevents our program from terminating.
 #### back to observing NSNotifications
 
 [The `startWatching`
-method](blob/3767628a0e24c6bccd463a2616f7f5226d4e1c9c/ProcWatcher.m#L6)
+method](ProcWatcher.m#L6)
 accesses the current OSX user's
 [`NSWorkspace`](https://developer.apple.com/reference/appkit/nsworkspace). The
 `NSWorkspace` handle allows us to hook into
@@ -170,7 +170,7 @@ The notable feature here is: we pass a callback to our notification center, and
 within that callback, we invoke a curious function: `AppStarted`. That function
 isn't defined anywhere in our C or Objective-C code: it's defined [in our
 original Go file
-`procmon.go`](blob/3767628a0e24c6bccd463a2616f7f5226d4e1c9c/procmon.go#L28-L31):
+`procmon.go`](procmon.go#L28-L31):
 
 ```go
 //export AppStarted
@@ -196,7 +196,7 @@ by so quickly, but it's there, and it's on disk when our C code gets compiled.
 In order to access those definitions from our C code, our C code has to import
 this fleeting header file. In this project, that inclusion happens in
 `ProcWatcher.m`
-[here](blob/3767628a0e24c6bccd463a2616f7f5226d4e1c9c/ProcWatcher.m#L1), which
+[here](ProcWatcher.m#L1), which
 looks like this:
 
 ```c
