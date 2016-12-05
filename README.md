@@ -5,7 +5,7 @@ events in AppKit. This project demonstrates the following useful techniques:
 
 - how to call C code from Go with cgo
 - how to link Apple frameworks into a  cgo project
-- how to call Go code from C
+- how to call Go code from C with cgo
 - how to integrate the callback-based concurrency model of AppKit into Go's CSP-style concurrency model
 
 The Go program directly links against the
@@ -38,7 +38,7 @@ Accessing cgo requires importing the pseudo-package `C`. It's important to
 understand that there is no literal `C` package in the Go standard library.
 Every project that uses cgo generates _its own_ `C` package transparently.
 
-When invoking `import "C"`, the commend that _immediately_ precedes the import
+When invoking `import "C"`, the comment that _immediately_ precedes the import
 directive contains a set of instructions to feed to cgo, as follows:
 
 ```go
@@ -50,15 +50,15 @@ directive contains a set of instructions to feed to cgo, as follows:
 import "C"
 ```
 
-Any lines starting with `#cgo` indicate compiler directives. These are passed
-to the cgo tool and are used to invoke the necessary compiler and linker. We
-use this flags to indicate that we want to invoke the Objective-C compiler and
-link agains the AppKit framework.
+Any lines starting with `#cgo` indicate cgo directives. These are passed to the
+cgo tool and are used to invoke the necessary compiler and linker. We use these
+flags to indicate that we want to invoke the Objective-C compiler and link
+agains the AppKit framework.
 
 The other lines in this comment, that is, the lines that do _not_ begin with
-`#cgo` are passed to the C compiler as if thy were in a C header file. This is
-where we `#include "procmon.h"`, the C header file for the C code that we want
-to invoke.
+`#cgo`, are passed to the C compiler as if thy were in a C header file. For our
+project, that is just one line: the line that includes `procmon.h`, the header
+file for the C code that we want to access.
 
 Down in the Go program's `main` function, we spawn a goroutine to listen on a
 channel for changes:
@@ -67,7 +67,7 @@ channel for changes:
     go reportChanges()
 ```
 
-the `reportChanges` function simply reads values off of a channel and prints
+The `reportChanges` function simply reads values off of a channel and prints
 them:
 
 ```go
@@ -83,7 +83,8 @@ func reportChanges() {
 }
 ```
 
-Back in `main`, we invoke the C function defined in our C header file:
+We then invoke the C function `MonitorProcesses`, which we declared in our C
+header file:
 ```go
     C.MonitorProcesses()
 ```
@@ -104,25 +105,25 @@ This function does two things: it starts by accessing a singleton of our
 Objective-C class `ProcWatcher` (that's `[ProcWatcher shared]`, which is defined
 [here](blob/3767628a0e24c6bccd463a2616f7f5226d4e1c9c/ProcWatcher.m#L6)) and
 invoking its `startWatching` method. This subscribes our `ProcWatcher` instance
-to OS notifications. We'll take a look at what the notification subscription
-looks like in a bit.
+to OS notifications. We'll come back to how the ProcWatcher subscribes to
+events in a bit.
 
 #### sidebar: the Run Loop
 
 After signing up for the notifications, we access the current processes'
-runloop with `[NSRunLoop currentRunLoop]` and call its
+Run Loop with `[NSRunLoop currentRunLoop]` and call its
 [`run`](https://developer.apple.com/reference/foundation/nsrunloop/1412430-run?language=objc)
-method to run the run loop. There are two reasons why we need to start the
-runloop. The first has to do with the mechanics of AppKit. NSRunLoop represents
-the event loop underpinning our notification center. Without the runloop
+method to run the Run Loop. There are two reasons why we need to start the
+Run Loop. The first has to do with the mechanics of AppKit. NSRunLoop represents
+the event loop underpinning our notification center. Without the Run Loop
 running, the notification center won't ever pick up any notifications. Apple
 has a wealth of documentation with respect to the mechanics of Run Loops. If
 you're _extremely curious_ about this part of the project, [this
 page](https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/Multithreading/RunLoopManagement/RunLoopManagement.html)
 has some great literature on how the Run Loop is operating inside of AppKit.
 
-The other reason we invoke the runloop in this way is that calling our
-runloop's run method blocks until the runloop itself terminates. Since we're
+The other reason we invoke the Run Loop in this way is that calling our
+Run Loop's run method blocks until the Run Loop itself terminates. Since we're
 invoking the C function from within the Go program's `main` function, we're
 blocking Go's `main` function, thus preventing `main` from returning. If `main`
 returns in the Go program, the Go runtime ends the process, which is _not_ what
