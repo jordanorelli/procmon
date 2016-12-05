@@ -56,11 +56,11 @@ flags to indicate that we want to invoke the Objective-C compiler and link
 agains the AppKit framework.
 
 The other lines in this comment, that is, the lines that do _not_ begin with
-`#cgo`, are passed to the C compiler as if thy were in a C header file. For our
+`#cgo`, are passed to the C compiler as if they were in a C header file. For our
 project, that is just one line: the line that includes `procmon.h`, the header
 file for the C code that we want to access.
 
-Down in the Go program's `main` function, we spawn a goroutine to listen on a
+Down [in the Go program's `main` function](blob/master/procmon.go#L50), we spawn a goroutine to listen on a
 channel for changes:
 
 ```go
@@ -84,9 +84,14 @@ func reportChanges() {
 ```
 
 We then invoke the C function `MonitorProcesses`, which we declared in our C
-header file:
+header file. In Go, the invocation looks like this:
 ```go
     C.MonitorProcesses()
+```
+
+And in our header file, the declaration looks like this:
+```c
+void MonitorProcesses();
 ```
 
 The cgo toolchain automatically associated `procmon.c` with our header file
